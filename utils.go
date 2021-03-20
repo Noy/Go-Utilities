@@ -5,20 +5,20 @@
 package utils
 
 import (
-	"strings"
+	"bytes"
+	"encoding/json"
+	"github.com/dustin/go-humanize"
+	"github.com/fatih/color"
+	"io"
+	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
-	"io"
 	"os"
-	"strconv"
-	"time"
-	"io/ioutil"
-	"encoding/json"
-	"github.com/fatih/color"
-	"log"
-	"github.com/dustin/go-humanize"
-	"bytes"
 	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func ConvertToFloat(s string) float64 {
@@ -47,7 +47,7 @@ func Comma(v int64) string {
 	return humanize.Comma(v)
 }
 
-func BubbleSortDesc(arr []string)[]string {
+func BubbleSortDesc(arr []string) []string {
 	temp := ""
 	for i := 0; i < len(arr); i++ {
 		for j := 1; j < len(arr)-i; j++ {
@@ -143,7 +143,7 @@ func DaysIn(m time.Month, year int) int {
 	return time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
-func GetRealAddr(r *http.Request)  string {
+func GetRealAddr(r *http.Request) string {
 	remoteIP := ""
 	if parts := strings.Split(r.RemoteAddr, ":"); len(parts) == 2 {
 		remoteIP = parts[0]
@@ -164,7 +164,7 @@ func GetRealAddr(r *http.Request)  string {
 
 func DenyAccess(w http.ResponseWriter, data string) {
 	color.HiRed("[%v] Access Denied From: %v", time.Now().Format(time.RFC850), color.HiBlueString(data))
-	http.Error(w, "You can't access this from " + data, 401)
+	http.Error(w, "You can't access this from "+data, 401)
 }
 
 func RedirectToHome(w http.ResponseWriter, req *http.Request) {
@@ -176,8 +176,10 @@ func OpenFile(path string) (file io.ReadWriteCloser, err error) {
 	return
 }
 
-func Mode(mode []string) (string) {
-	if len(mode) == 0 {return ""}
+func Mode(mode []string) string {
+	if len(mode) == 0 {
+		return ""
+	}
 	var modeMap = map[string]int{}
 	var maxEl = mode[0]
 	var maxCount = 1
@@ -205,7 +207,7 @@ type Rates struct {
 }
 
 func GetExchangeRates(currency string, fallback float64) float64 {
-	re, err := http.Get("https://api.exchangeratesapi.io/latest?base="+currency)
+	re, err := http.Get("https://api.exchangeratesapi.io/latest?base=" + currency)
 	if err != nil {
 		log.Printf("Something went wrong getting the API: %v", err.Error())
 		return fallback
@@ -363,7 +365,7 @@ func CurrencySymbol(country, currency string) string {
 	}
 }
 
-func ParseCSVFile(fileName string) (*os.File) {
+func ParseCSVFile(fileName string) *os.File {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Printf("err opening file, %v", err.Error())
@@ -382,4 +384,14 @@ func FormatDateWithSuffix(t time.Time) string {
 		suffix = "rd"
 	}
 	return t.Format("January 2" + suffix + ", 2006")
+}
+
+func Bod(t time.Time) time.Time {
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
+}
+
+func Eod(t time.Time) time.Time {
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 23, 59, 59, 0, t.Location())
 }
