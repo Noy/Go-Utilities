@@ -198,15 +198,13 @@ func Mode(mode []string) string {
 	return maxEl
 }
 
-type CurrencyResult struct {
-	Rates Rates `json:"rates"`
-}
-
-type Rates struct {
-	GBP float64 `json:"GBP"`
-}
-
 func GetExchangeRates(currency string, fallback float64) float64 {
+	type Rates struct {
+		GBP float64 `json:"GBP"`
+	}
+	type CurrencyResult struct {
+		Rates Rates `json:"rates"`
+	}
 	re, err := http.Get("https://api.exchangeratesapi.io/latest?base=" + currency)
 	if err != nil {
 		log.Printf("Something went wrong getting the API: %v", err.Error())
@@ -386,6 +384,21 @@ func FormatDateWithSuffix(t time.Time) string {
 	return t.Format("January 2" + suffix + ", 2006")
 }
 
+func DownloadAndSaveFile(filepath string, url string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
 func Bod(t time.Time) time.Time {
 	year, month, day := t.Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
@@ -394,4 +407,32 @@ func Bod(t time.Time) time.Time {
 func Eod(t time.Time) time.Time {
 	year, month, day := t.Date()
 	return time.Date(year, month, day, 23, 59, 59, 0, t.Location())
+}
+
+func GetRoad(lat, long, apiKey string) string {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://api.opencagedata.com/geocode/v1/json?q="+lat+"+"+long+"&key="+apiKey, nil)
+	if err != nil {
+		return err.Error()
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer resp.Body.Close()
+	type Results struct {
+		Formatted string `json:"formatted"`
+	}
+	type Geo struct {
+		Results []Results `json:"results"`
+	}
+	var r Geo
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err := json.Unmarshal(respBody, &r); err != nil {
+		log.Println(err.Error())
+	}
+	for _, c := range r.Results {
+		return c.Formatted
+	}
+	return "Not found"
 }
