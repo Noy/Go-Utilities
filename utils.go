@@ -437,39 +437,24 @@ func GetRoad(lat, long, apiKey string) string {
 	return "Not found"
 }
 
-type Rates struct {
-	GBP float64 `json:"GBP"`
-	EUR float64 `json:"EUR"`
-	USD float64 `json:"EUR"`
-	CHF float64 `json:"CHF"`
-	ILS float64 `json:"ILS"`
-	AUD float64 `json:"AUD"`
-	NZD float64 `json:"NZD"`
-	UAH float64 `json:"UAH"`
-	JPY float64 `json:"JPY"`
-}
-
-func GetExchangeRateFor(currency, newCurrency string) Rates {
+func GetExchangeRateFor(currency, toCurrency string) float64 {
 	type CurrencyResult struct {
-		Rates Rates `json:"rates"`
+		Rates map[string]float64 `json:"rates"`
 	}
 	re, err := http.Get("https://api.exchangeratesapi.io/latest?base=" + currency)
 	if err != nil {
 		log.Printf("Something went wrong getting the API: %v", err.Error())
-		return Rates{}
+		return 0
 	}
 	defer re.Body.Close()
 	body, err := ioutil.ReadAll(re.Body)
 	if err != nil {
 		log.Printf("Error with reading body.. falling back on %v. Error: %v", 0, err.Error())
-		return Rates{}
+		return 0
 	}
 	var cR CurrencyResult
 	if err = json.Unmarshal(body, &cR); err != nil {
-		if err != nil {
-			log.Printf("Error with unmarshal, falling back on %v. Error: %v", 0, err.Error())
-			return Rates{}
-		}
+		log.Println(err.Error())
 	}
-	return cR.Rates
+	return cR.Rates[toCurrency]
 }
