@@ -198,32 +198,31 @@ func Mode(mode []string) string {
 	return maxEl
 }
 
-func GetExchangeRates(currency string, fallback float64) float64 {
-	type Rates struct {
-		GBP float64 `json:"GBP"`
-	}
-	type CurrencyResult struct {
-		Rates Rates `json:"rates"`
-	}
-	re, err := http.Get("https://api.exchangeratesapi.io/latest?base=" + currency)
+func GetExchangeRates(currency string, fallback float64, apiKey string) float64 {
+	req, err := http.Get("https://v6.exchangerate-api.com/v6/" + apiKey + "/latest/" + currency)
 	if err != nil {
 		log.Printf("Something went wrong getting the API: %v", err.Error())
 		return fallback
 	}
-	defer re.Body.Close()
-	body, err := ioutil.ReadAll(re.Body)
+	type Rates struct {
+		ConversionRates struct {
+			GBP float64 `json:"GBP"`
+		} `json:"conversion_rates"`
+	}
+	defer req.Body.Close()
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("Error with reading body.. falling back on %v. Error: %v", fallback, err.Error())
 		return fallback
 	}
-	var cR CurrencyResult
+	var cR Rates
 	if err = json.Unmarshal(body, &cR); err != nil {
 		if err != nil {
 			log.Printf("Error with unmarshal, falling back on %v. Error: %v", fallback, err.Error())
 			return fallback
 		}
 	}
-	return cR.Rates.GBP
+	return cR.ConversionRates.GBP
 }
 
 func JsonPrettyPrint(in string) string {
