@@ -139,6 +139,15 @@ func MonthInSlice(a interface{}, list []time.Month) bool {
 	return false
 }
 
+func StringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 func DaysIn(m time.Month, year int) int {
 	return time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
 }
