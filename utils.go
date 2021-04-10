@@ -445,24 +445,28 @@ func GetRoad(lat, long, apiKey string) string {
 	return "Not found"
 }
 
-func GetExchangeRateFor(currency, toCurrency string) float64 {
+func GetExchangeRateFor(currency string, toCurrency string, apiKey string) float64 {
 	type CurrencyResult struct {
 		Rates map[string]float64 `json:"rates"`
 	}
-	re, err := http.Get("https://api.exchangeratesapi.io/latest?base=" + currency)
+	req, err := http.Get("https://v6.exchangerate-api.com/v6/" + apiKey + "/latest/" + currency)
 	if err != nil {
 		log.Printf("Something went wrong getting the API: %v", err.Error())
 		return 0
 	}
-	defer re.Body.Close()
-	body, err := ioutil.ReadAll(re.Body)
+	type Rates struct {
+		BaseCode        string             `json:"base_code"`
+		ConversionRates map[string]float64 `json:"conversion_rates"`
+	}
+	defer req.Body.Close()
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("Error with reading body.. falling back on %v. Error: %v", 0, err.Error())
 		return 0
 	}
-	var cR CurrencyResult
+	var cR Rates
 	if err = json.Unmarshal(body, &cR); err != nil {
 		log.Println(err.Error())
 	}
-	return cR.Rates[toCurrency]
+	return cR.ConversionRates[toCurrency]
 }
